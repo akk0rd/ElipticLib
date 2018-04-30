@@ -16,3 +16,7 @@ large_num;
 
 
 #endif // BIGNUM_H
+
+int large_num_cmp_abs( const large_num *X, const large_num *Y );
+
+int large_num_add_abs( large_num *X, const large_num *A, const large_num *B );
