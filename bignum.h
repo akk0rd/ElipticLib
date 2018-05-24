@@ -94,6 +94,11 @@
 #define MBEDTLS_LN_2_DIV_LN_10_SCALE100                 332
 #define MBEDTLS_MPI_RW_BUFFER_SIZE             ( ((MBEDTLS_MPI_MAX_BITS_SCALE100 + MBEDTLS_LN_2_DIV_LN_10_SCALE100 - 1) / MBEDTLS_LN_2_DIV_LN_10_SCALE100) + 10 + 6 )
 
+
+struct _IO_FILE;
+
+typedef struct _IO_FILE FILE;
+
 /*
  * Define the base integer type, architecture-wise.
  *
@@ -332,7 +337,6 @@ int mbedtls_mpi_read_string( mbedtls_mpi *X, int radix, const char *s );
 int mbedtls_mpi_write_string( const mbedtls_mpi *X, int radix,
                               char *buf, size_t buflen, size_t *olen );
 
-#if defined(MBEDTLS_FS_IO)
 /**
  * \brief          Read X from an opened file
  *
@@ -359,7 +363,6 @@ int mbedtls_mpi_read_file( mbedtls_mpi *X, int radix, FILE *fin );
  * \note           Set fout == NULL to print X on the console.
  */
 int mbedtls_mpi_write_file( const char *p, const mbedtls_mpi *X, int radix, FILE *fout );
-#endif /* MBEDTLS_FS_IO */
 
 /**
  * \brief          Import X from unsigned binary data, big endian
