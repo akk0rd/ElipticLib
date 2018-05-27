@@ -279,19 +279,6 @@ void mbedtls_ecp_group_init( mbedtls_ecp_group *grp )
 }
 
 /*
- * Initialize (the components of) a key pair
- */
-void mbedtls_ecp_keypair_init( mbedtls_ecp_keypair *key )
-{
-    if( key == NULL )
-        return;
-
-    mbedtls_ecp_group_init( &key->grp );
-    mbedtls_mpi_init( &key->d );
-    mbedtls_ecp_point_init( &key->Q );
-}
-
-/*
  * Unallocate (the components of) a point
  */
 void mbedtls_ecp_point_free( mbedtls_ecp_point *pt )
@@ -333,18 +320,6 @@ void mbedtls_ecp_group_free( mbedtls_ecp_group *grp )
     mbedtls_zeroize( grp, sizeof( mbedtls_ecp_group ) );
 }
 
-/*
- * Unallocate (the components of) a key pair
- */
-void mbedtls_ecp_keypair_free( mbedtls_ecp_keypair *key )
-{
-    if( key == NULL )
-        return;
-
-    mbedtls_ecp_group_free( &key->grp );
-    mbedtls_mpi_free( &key->d );
-    mbedtls_ecp_point_free( &key->Q );
-}
 
 /*
  * Copy the contents of a point
@@ -1597,69 +1572,12 @@ int mbedtls_ecp_mul( mbedtls_ecp_group *grp, mbedtls_ecp_point *R,
 {
     int ret;
 
-    /* Common sanity checks */
-    if( mbedtls_mpi_cmp_int( &P->Z, 1 ) != 0 )
-        return( MBEDTLS_ERR_ECP_BAD_INPUT_DATA );
-
-    if( ( ret = mbedtls_ecp_check_privkey( grp, m ) ) != 0 ||
-        ( ret = mbedtls_ecp_check_pubkey( grp, P ) ) != 0 )
-        return( ret );
-
-
     if( ecp_get_type( grp ) == ECP_TYPE_MONTGOMERY )
         return( ecp_mul_mxz( grp, R, m, P, f_rng, p_rng ) );
 
     if( ecp_get_type( grp ) == ECP_TYPE_SHORT_WEIERSTRASS )
         return( ecp_mul_comb( grp, R, m, P, f_rng, p_rng ) );
     return( MBEDTLS_ERR_ECP_BAD_INPUT_DATA );
-}
-
-/*
- * Check that an affine point is valid as a public key,
- * short weierstrass curves (SEC1 3.2.3.1)
- */
-static int ecp_check_pubkey_sw( const mbedtls_ecp_group *grp, const mbedtls_ecp_point *pt )
-{
-    int ret;
-    mbedtls_mpi YY, RHS;
-
-    /* pt coordinates must be normalized for our checks */
-    if( mbedtls_mpi_cmp_int( &pt->X, 0 ) < 0 ||
-        mbedtls_mpi_cmp_int( &pt->Y, 0 ) < 0 ||
-        mbedtls_mpi_cmp_mpi( &pt->X, &grp->P ) >= 0 ||
-        mbedtls_mpi_cmp_mpi( &pt->Y, &grp->P ) >= 0 )
-        return( MBEDTLS_ERR_ECP_INVALID_KEY );
-
-    mbedtls_mpi_init( &YY ); mbedtls_mpi_init( &RHS );
-
-    /*
-     * YY = Y^2
-     * RHS = X (X^2 + A) + B = X^3 + A X + B
-     */
-    MBEDTLS_MPI_CHK( mbedtls_mpi_mul_mpi( &YY,  &pt->Y,   &pt->Y  ) );  MOD_MUL( YY  );
-    MBEDTLS_MPI_CHK( mbedtls_mpi_mul_mpi( &RHS, &pt->X,   &pt->X  ) );  MOD_MUL( RHS );
-
-    /* Special case for A = -3 */
-    if( grp->A.p == NULL )
-    {
-        MBEDTLS_MPI_CHK( mbedtls_mpi_sub_int( &RHS, &RHS, 3       ) );  MOD_SUB( RHS );
-    }
-    else
-    {
-        MBEDTLS_MPI_CHK( mbedtls_mpi_add_mpi( &RHS, &RHS, &grp->A ) );  MOD_ADD( RHS );
-    }
-
-    MBEDTLS_MPI_CHK( mbedtls_mpi_mul_mpi( &RHS, &RHS,     &pt->X  ) );  MOD_MUL( RHS );
-    MBEDTLS_MPI_CHK( mbedtls_mpi_add_mpi( &RHS, &RHS,     &grp->B ) );  MOD_ADD( RHS );
-
-    if( mbedtls_mpi_cmp_mpi( &YY, &RHS ) != 0 )
-        ret = MBEDTLS_ERR_ECP_INVALID_KEY;
-
-cleanup:
-
-    mbedtls_mpi_free( &YY ); mbedtls_mpi_free( &RHS );
-
-    return( ret );
 }
 
 /*
@@ -1720,208 +1638,6 @@ cleanup:
     return( ret );
 }
 
-/*
- * Check validity of a public key for Montgomery curves with x-only schemes
- */
-static int ecp_check_pubkey_mx( const mbedtls_ecp_group *grp, const mbedtls_ecp_point *pt )
-{
-    /* [Curve25519 p. 5] Just check X is the correct number of bytes */
-    if( mbedtls_mpi_size( &pt->X ) > ( grp->nbits + 7 ) / 8 )
-        return( MBEDTLS_ERR_ECP_INVALID_KEY );
-
-    return( 0 );
-}
-
-/*
- * Check that a point is valid as a public key
- */
-int mbedtls_ecp_check_pubkey( const mbedtls_ecp_group *grp, const mbedtls_ecp_point *pt )
-{
-    /* Must use affine coordinates */
-    if( mbedtls_mpi_cmp_int( &pt->Z, 1 ) != 0 )
-        return( MBEDTLS_ERR_ECP_INVALID_KEY );
-
-    if( ecp_get_type( grp ) == ECP_TYPE_MONTGOMERY )
-        return( ecp_check_pubkey_mx( grp, pt ) );
-
-    if( ecp_get_type( grp ) == ECP_TYPE_SHORT_WEIERSTRASS )
-        return( ecp_check_pubkey_sw( grp, pt ) );
-    return( MBEDTLS_ERR_ECP_BAD_INPUT_DATA );
-}
-
-/*
- * Check that an mbedtls_mpi is valid as a private key
- */
-int mbedtls_ecp_check_privkey( const mbedtls_ecp_group *grp, const mbedtls_mpi *d )
-{
-    if( ecp_get_type( grp ) == ECP_TYPE_MONTGOMERY )
-    {
-        /* see [Curve25519] page 5 */
-        if( mbedtls_mpi_get_bit( d, 0 ) != 0 ||
-            mbedtls_mpi_get_bit( d, 1 ) != 0 ||
-            mbedtls_mpi_get_bit( d, 2 ) != 0 ||
-            mbedtls_mpi_bitlen( d ) - 1 != grp->nbits ) /* mbedtls_mpi_bitlen is one-based! */
-            return( MBEDTLS_ERR_ECP_INVALID_KEY );
-        else
-            return( 0 );
-    }
-    if( ecp_get_type( grp ) == ECP_TYPE_SHORT_WEIERSTRASS )
-    {
-        /* see SEC1 3.2 */
-        if( mbedtls_mpi_cmp_int( d, 1 ) < 0 ||
-            mbedtls_mpi_cmp_mpi( d, &grp->N ) >= 0 )
-            return( MBEDTLS_ERR_ECP_INVALID_KEY );
-        else
-            return( 0 );
-    }
-
-    return( MBEDTLS_ERR_ECP_BAD_INPUT_DATA );
-}
-
-/*
- * Generate a keypair with configurable base point
- */
-int mbedtls_ecp_gen_keypair_base( mbedtls_ecp_group *grp,
-                     const mbedtls_ecp_point *G,
-                     mbedtls_mpi *d, mbedtls_ecp_point *Q,
-                     int (*f_rng)(void *, unsigned char *, size_t),
-                     void *p_rng )
-{
-    int ret;
-    size_t n_size = ( grp->nbits + 7 ) / 8;
-
-    if( ecp_get_type( grp ) == ECP_TYPE_MONTGOMERY )
-    {
-        /* [M225] page 5 */
-        size_t b;
-
-        do {
-            MBEDTLS_MPI_CHK( mbedtls_mpi_fill_random( d, n_size, f_rng, p_rng ) );
-        } while( mbedtls_mpi_bitlen( d ) == 0);
-
-        /* Make sure the most significant bit is nbits */
-        b = mbedtls_mpi_bitlen( d ) - 1; /* mbedtls_mpi_bitlen is one-based */
-        if( b > grp->nbits )
-            MBEDTLS_MPI_CHK( mbedtls_mpi_shift_r( d, b - grp->nbits ) );
-        else
-            MBEDTLS_MPI_CHK( mbedtls_mpi_set_bit( d, grp->nbits, 1 ) );
-
-        /* Make sure the last three bits are unset */
-        MBEDTLS_MPI_CHK( mbedtls_mpi_set_bit( d, 0, 0 ) );
-        MBEDTLS_MPI_CHK( mbedtls_mpi_set_bit( d, 1, 0 ) );
-        MBEDTLS_MPI_CHK( mbedtls_mpi_set_bit( d, 2, 0 ) );
-    }
-    else
-    if( ecp_get_type( grp ) == ECP_TYPE_SHORT_WEIERSTRASS )
-    {
-        /* SEC1 3.2.1: Generate d such that 1 <= n < N */
-        int count = 0;
-        unsigned char rnd[MBEDTLS_ECP_MAX_BYTES];
-
-        /*
-         * Match the procedure given in RFC 6979 (deterministic ECDSA):
-         * - use the same byte ordering;
-         * - keep the leftmost nbits bits of the generated octet string;
-         * - try until result is in the desired range.
-         * This also avoids any biais, which is especially important for ECDSA.
-         */
-        do
-        {
-            MBEDTLS_MPI_CHK( f_rng( p_rng, rnd, n_size ) );
-            MBEDTLS_MPI_CHK( mbedtls_mpi_read_binary( d, rnd, n_size ) );
-            MBEDTLS_MPI_CHK( mbedtls_mpi_shift_r( d, 8 * n_size - grp->nbits ) );
-
-            /*
-             * Each try has at worst a probability 1/2 of failing (the msb has
-             * a probability 1/2 of being 0, and then the result will be < N),
-             * so after 30 tries failure probability is a most 2**(-30).
-             *
-             * For most curves, 1 try is enough with overwhelming probability,
-             * since N starts with a lot of 1s in binary, but some curves
-             * such as secp224k1 are actually very close to the worst case.
-             */
-            if( ++count > 30 )
-                return( MBEDTLS_ERR_ECP_RANDOM_FAILED );
-        }
-        while( mbedtls_mpi_cmp_int( d, 1 ) < 0 ||
-               mbedtls_mpi_cmp_mpi( d, &grp->N ) >= 0 );
-    }
-    else
-       return( MBEDTLS_ERR_ECP_BAD_INPUT_DATA );
-
-cleanup:
-    if( ret != 0 )
-        return( ret );
-
-    return( mbedtls_ecp_mul( grp, Q, d, G, f_rng, p_rng ) );
-}
-
-/*
- * Generate key pair, wrapper for conventional base point
- */
-int mbedtls_ecp_gen_keypair( mbedtls_ecp_group *grp,
-                             mbedtls_mpi *d, mbedtls_ecp_point *Q,
-                             int (*f_rng)(void *, unsigned char *, size_t),
-                             void *p_rng )
-{
-    return( mbedtls_ecp_gen_keypair_base( grp, &grp->G, d, Q, f_rng, p_rng ) );
-}
-
-/*
- * Generate a keypair, prettier wrapper
- */
-int mbedtls_ecp_gen_key( mbedtls_ecp_group_id grp_id, mbedtls_ecp_keypair *key,
-                int (*f_rng)(void *, unsigned char *, size_t), void *p_rng )
-{
-    int ret;
-
-    if( ( ret = mbedtls_ecp_group_load( &key->grp, grp_id ) ) != 0 )
-        return( ret );
-
-    return( mbedtls_ecp_gen_keypair( &key->grp, &key->d, &key->Q, f_rng, p_rng ) );
-}
-
-/*
- * Check a public-private key pair
- */
-int mbedtls_ecp_check_pub_priv( const mbedtls_ecp_keypair *pub, const mbedtls_ecp_keypair *prv )
-{
-    int ret;
-    mbedtls_ecp_point Q;
-    mbedtls_ecp_group grp;
-
-    if( pub->grp.id == MBEDTLS_ECP_DP_NONE ||
-        pub->grp.id != prv->grp.id ||
-        mbedtls_mpi_cmp_mpi( &pub->Q.X, &prv->Q.X ) ||
-        mbedtls_mpi_cmp_mpi( &pub->Q.Y, &prv->Q.Y ) ||
-        mbedtls_mpi_cmp_mpi( &pub->Q.Z, &prv->Q.Z ) )
-    {
-        return( MBEDTLS_ERR_ECP_BAD_INPUT_DATA );
-    }
-
-    mbedtls_ecp_point_init( &Q );
-    mbedtls_ecp_group_init( &grp );
-
-    /* mbedtls_ecp_mul() needs a non-const group... */
-    mbedtls_ecp_group_copy( &grp, &prv->grp );
-
-    /* Also checks d is valid */
-    MBEDTLS_MPI_CHK( mbedtls_ecp_mul( &grp, &Q, &prv->d, &prv->grp.G, NULL, NULL ) );
-
-    if( mbedtls_mpi_cmp_mpi( &Q.X, &prv->Q.X ) ||
-        mbedtls_mpi_cmp_mpi( &Q.Y, &prv->Q.Y ) ||
-        mbedtls_mpi_cmp_mpi( &Q.Z, &prv->Q.Z ) )
-    {
-        ret = MBEDTLS_ERR_ECP_BAD_INPUT_DATA;
-        goto cleanup;
-    }
-
-cleanup:
-    mbedtls_ecp_point_free( &Q );
-    mbedtls_ecp_group_free( &grp );
-
-    return( ret );
-}
 /*
  * Checkup routine
  */
