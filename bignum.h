@@ -1,34 +1,10 @@
-/**
- * \file bignum.h
- *
- * \brief  Multi-precision integer library
- *
- *  Copyright (C) 2006-2015, ARM Limited, All Rights Reserved
- *  SPDX-License-Identifier: Apache-2.0
- *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may
- *  not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- *  This file is part of mbed TLS (https://tls.mbed.org)
- */
 #ifndef MBEDTLS_BIGNUM_H
 #define MBEDTLS_BIGNUM_H
 
 #include <stddef.h>
 #include <stdint.h>
 
-#if defined(MBEDTLS_FS_IO)
 #include <stdio.h>
-#endif
 
 #define MBEDTLS_ERR_MPI_FILE_IO_ERROR                     -0x0002  /**< An error occurred while reading from or writing to a file. */
 #define MBEDTLS_ERR_MPI_BAD_INPUT_DATA                    -0x0004  /**< Bad input parameters to function. */
@@ -94,44 +70,10 @@
 #define MBEDTLS_LN_2_DIV_LN_10_SCALE100                 332
 #define MBEDTLS_MPI_RW_BUFFER_SIZE             ( ((MBEDTLS_MPI_MAX_BITS_SCALE100 + MBEDTLS_LN_2_DIV_LN_10_SCALE100 - 1) / MBEDTLS_LN_2_DIV_LN_10_SCALE100) + 10 + 6 )
 
-
-struct _IO_FILE;
-
 typedef struct _IO_FILE FILE;
 
-/*
- * Define the base integer type, architecture-wise.
- *
- * 32-bit integers can be forced on 64-bit arches (eg. for testing purposes)
- * by defining MBEDTLS_HAVE_INT32 and undefining MBEDTLS_HAVE_ASM
- */
-#if ( ! defined(MBEDTLS_HAVE_INT32) && \
-        defined(_MSC_VER) && defined(_M_AMD64) )
-  #define MBEDTLS_HAVE_INT64
-  typedef  int64_t mbedtls_mpi_sint;
-  typedef uint64_t mbedtls_mpi_uint;
-#else
-  #if ( ! defined(MBEDTLS_HAVE_INT32) &&               \
-        defined(__GNUC__) && (                          \
-        defined(__amd64__) || defined(__x86_64__)    || \
-        defined(__ppc64__) || defined(__powerpc64__) || \
-        defined(__ia64__)  || defined(__alpha__)     || \
-        (defined(__sparc__) && defined(__arch64__))  || \
-        defined(__s390x__) || defined(__mips64) ) )
-     #define MBEDTLS_HAVE_INT64
-     typedef  int64_t mbedtls_mpi_sint;
-     typedef uint64_t mbedtls_mpi_uint;
-     /* mbedtls_t_udbl defined as 128-bit unsigned int */
-     typedef unsigned int mbedtls_t_udbl __attribute__((mode(TI)));
-     #define MBEDTLS_HAVE_UDBL
-  #else
-     #define MBEDTLS_HAVE_INT32
-     typedef  int32_t mbedtls_mpi_sint;
-     typedef uint32_t mbedtls_mpi_uint;
-     typedef uint64_t mbedtls_t_udbl;
-     #define MBEDTLS_HAVE_UDBL
-  #endif /* !MBEDTLS_HAVE_INT32 && __GNUC__ && 64-bit platform */
-#endif /* !MBEDTLS_HAVE_INT32 && _MSC_VER && _M_AMD64 */
+typedef  int64_t mbedtls_mpi_sint;
+typedef uint64_t mbedtls_mpi_uint;
 
 #ifdef __cplusplus
 extern "C" {

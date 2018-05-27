@@ -30,14 +30,16 @@ int mest( int verbose )
     mbedtls_mpi_lset( &m, 2 );
     mbedtls_ecp_mul( &grp, &P, &m, &grp.G, NULL, NULL );
 
-
-    mbedtls_mpi_write_file(NULL, &grp.G.X, 16, NULL );
-    mbedtls_mpi_write_file(NULL, &grp.G.Y, 16, NULL );
-    mbedtls_mpi_write_file(NULL, &grp.G.Z, 16, NULL );
-    mbedtls_mpi_write_file(NULL, &grp.P, 16, NULL );
-    mbedtls_mpi_write_file(NULL, &grp.A, 16, NULL );
-    mbedtls_mpi_write_file(NULL, &grp.B, 16, NULL );
-    mbedtls_mpi_write_file(NULL, &grp.N, 16, NULL );
+    mbedtls_mpi_write_file(NULL, &P.X, 16, NULL );
+    mbedtls_mpi_write_file(NULL, &P.Y, 16, NULL );
+    mbedtls_mpi_write_file(NULL, &P.Z, 16, NULL );
+    //mbedtls_mpi_write_file(NULL, &grp.G.X, 16, NULL );
+    //mbedtls_mpi_write_file(NULL, &grp.G.Y, 16, NULL );
+    //mbedtls_mpi_write_file(NULL, &grp.G.Z, 16, NULL );
+    //mbedtls_mpi_write_file(NULL, &grp.P, 16, NULL );
+    //mbedtls_mpi_write_file(NULL, &grp.A, 16, NULL );
+    //mbedtls_mpi_write_file(NULL, &grp.B, 16, NULL );
+    //mbedtls_mpi_write_file(NULL, &grp.N, 16, NULL );
 
     return( 0 );
 }
@@ -45,5 +47,7 @@ int mest( int verbose )
 
 int main()
 {
-    printf("%i",mest(0));
+    //printf("%i",mest(0));
+    printf("%i\n",mbedtls_mpi_self_test(0));
+    printf("%i\n",mbedtls_ecp_self_test(0));
 }
