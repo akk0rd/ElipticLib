@@ -16,26 +16,8 @@
 extern "C" {
 #endif
 
-typedef enum
-{
-    MBEDTLS_ECP_DP_NONE = 0,
-    MBEDTLS_ECP_DP_SECP192R1,      /*!< 192-bits NIST curve  */
-    MBEDTLS_ECP_DP_SECP224R1,      /*!< 224-bits NIST curve  */
-    MBEDTLS_ECP_DP_SECP256R1,      /*!< 256-bits NIST curve  */
-    MBEDTLS_ECP_DP_SECP384R1,      /*!< 384-bits NIST curve  */
-    MBEDTLS_ECP_DP_SECP521R1,      /*!< 521-bits NIST curve  */
-    MBEDTLS_ECP_DP_BP256R1,        /*!< 256-bits Brainpool curve */
-    MBEDTLS_ECP_DP_BP384R1,        /*!< 384-bits Brainpool curve */
-    MBEDTLS_ECP_DP_BP512R1,        /*!< 512-bits Brainpool curve */
-    MBEDTLS_ECP_DP_CURVE25519,           /*!< Curve25519               */
-    MBEDTLS_ECP_DP_SECP192K1,      /*!< 192-bits "Koblitz" curve */
-    MBEDTLS_ECP_DP_SECP224K1,      /*!< 224-bits "Koblitz" curve */
-    MBEDTLS_ECP_DP_SECP256K1,      /*!< 256-bits "Koblitz" curve */
-} mbedtls_ecp_group_id;
-
 typedef struct
 {
-    mbedtls_ecp_group_id grp_id;    /*!< Internal identifier        */
     uint16_t tls_id;                /*!< TLS NamedCurve identifier  */
     uint16_t bit_size;              /*!< Curve size in bits         */
     const char *name;               /*!< Human-friendly name        */
@@ -84,7 +66,6 @@ mbedtls_ecp_point;
  */
 typedef struct
 {
-    mbedtls_ecp_group_id id;    /*!<  internal group identifier                     */
     mbedtls_mpi P;              /*!<  prime modulus of the base field               */
     mbedtls_mpi A;              /*!<  1. A in the equation, or 2. (A + 2) / 4       */
     mbedtls_mpi B;              /*!<  1. B in the equation, or 2. unused            */
@@ -94,9 +75,6 @@ typedef struct
     size_t nbits;       /*!<  number of bits in 1. P, or 2. private keys    */
     unsigned int h;     /*!<  internal: 1 if the constants are static       */
     int (*modp)(mbedtls_mpi *); /*!<  function for fast reduction mod P             */
-    int (*t_pre)(mbedtls_ecp_point *, void *);  /*!< unused                         */
-    int (*t_post)(mbedtls_ecp_point *, void *); /*!< unused                         */
-    void *t_data;                       /*!< unused                         */
     mbedtls_ecp_point *T;       /*!<  pre-computed points for ecp_mul_comb()        */
     size_t T_size;      /*!<  number for pre-computed points                */
 }
@@ -179,24 +157,6 @@ mbedtls_ecp_group;
  * \return          A statically allocated array, the last entry is 0.
  */
 const mbedtls_ecp_curve_info *mbedtls_ecp_curve_list( void );
-
-/**
- * \brief           Get the list of supported curves in order of preferrence
- *                  (grp_id only)
- *
- * \return          A statically allocated array,
- *                  terminated with MBEDTLS_ECP_DP_NONE.
- */
-const mbedtls_ecp_group_id *mbedtls_ecp_grp_id_list( void );
-
-/**
- * \brief           Get curve information from an internal group identifier
- *
- * \param grp_id    A MBEDTLS_ECP_DP_XXX value
- *
- * \return          The associated curve information or NULL
- */
-const mbedtls_ecp_curve_info *mbedtls_ecp_curve_info_from_grp_id( mbedtls_ecp_group_id grp_id );
 
 /**
  * \brief           Get curve information from a TLS NamedCurve value
@@ -318,7 +278,7 @@ int mbedtls_ecp_point_read_string( mbedtls_ecp_point *P, int radix,
  * \note            Index should be a value of RFC 4492's enum NamedCurve,
  *                  usually in the form of a MBEDTLS_ECP_DP_XXX macro.
  */
-int mbedtls_ecp_group_load( mbedtls_ecp_group *grp, mbedtls_ecp_group_id index );
+int mbedtls_ecp_group_load( mbedtls_ecp_group *grp );
 
 /**
  * \brief           Multiplication by an integer: R = m * P

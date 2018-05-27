@@ -95,27 +95,19 @@ static int ecp_group_load( mbedtls_ecp_group *grp,
     return( 0 );
 }
 
-#define LOAD_GROUP_A( G )   ecp_group_load( grp,            \
-                            G ## _p,  sizeof( G ## _p  ),   \
-                            G ## _a,  sizeof( G ## _a  ),   \
-                            G ## _b,  sizeof( G ## _b  ),   \
-                            G ## _gx, sizeof( G ## _gx ),   \
-                            G ## _gy, sizeof( G ## _gy ),   \
-                            G ## _n,  sizeof( G ## _n  ) )
-
-#define LOAD_GROUP( G )     ecp_group_load( grp,            \
-                            G ## _p,  sizeof( G ## _p  ),   \
-                            NULL,     0,                    \
-                            G ## _b,  sizeof( G ## _b  ),   \
-                            G ## _gx, sizeof( G ## _gx ),   \
-                            G ## _gy, sizeof( G ## _gy ),   \
-                            G ## _n,  sizeof( G ## _n  ) )
-
 /*
  * Set a group using well-known domain parameters
  */
-int mbedtls_ecp_group_load( mbedtls_ecp_group *grp, mbedtls_ecp_group_id id )
+int mbedtls_ecp_group_load( mbedtls_ecp_group *grp )
 {
     mbedtls_ecp_group_free( grp );
-    return( LOAD_GROUP( secp192r1 ));
+    return(  ecp_group_load(grp,
+                secp192r1_p, sizeof(secp192r1_p),
+                NULL, 0,
+                secp192r1_b, sizeof(secp192r1_b),
+                secp192r1_gx, sizeof(secp192r1_gx),
+                secp192r1_gy, sizeof(secp192r1_gy),
+                secp192r1_n, sizeof(secp192r1_n)
+                 )
+                 );
 }
