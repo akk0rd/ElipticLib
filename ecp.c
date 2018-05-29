@@ -2,24 +2,13 @@
 
 #include <string.h>
 
-#if defined(MBEDTLS_PLATFORM_C)
-#include "mbedtls/platform.h"
-#else
 #include <stdlib.h>
 #include <stdio.h>
-#define mbedtls_printf     printf
-#define mbedtls_calloc    calloc
-#define mbedtls_free       free
-#endif
 
-/* Implementation that should never be optimized out by the compiler */
 static void mbedtls_zeroize( void *v, size_t n ) {
     volatile unsigned char *p = v; while( n-- ) *p++ = 0;
 }
-/*
- * Counts of point addition and doubling, and field multiplications.
- * Used to test resistance of point multiplication to simple timing attacks.
- */
+
 static unsigned long add_count, dbl_count, mul_count;
 
 
@@ -32,9 +21,6 @@ typedef enum
     ECP_TYPE_SHORT_WEIERSTRASS,    /* y^2 = x^3 + a x + b      */
     ECP_TYPE_MONTGOMERY,           /* y^2 = x^3 + a x^2 + x    */
 } ecp_curve_type;
-
-#define ECP_NB_CURVES   sizeof( ecp_supported_curves ) /    \
-                        sizeof( ecp_supported_curves[0] )
 
 
 /*
@@ -111,7 +97,7 @@ void mbedtls_ecp_group_free( mbedtls_ecp_group *grp )
     {
         for( i = 0; i < grp->T_size; i++ )
             mbedtls_ecp_point_free( &grp->T[i] );
-        mbedtls_free( grp->T );
+        free( grp->T );
     }
 
     mbedtls_zeroize( grp, sizeof( mbedtls_ecp_group ) );
@@ -330,7 +316,7 @@ static int ecp_normalize_jac_many( const mbedtls_ecp_group *grp,
     if( t_len < 2 )
         return( ecp_normalize_jac( grp, *T ) );
 
-    if( ( c = mbedtls_calloc( t_len, sizeof( mbedtls_mpi ) ) ) == NULL )
+    if( ( c = calloc( t_len, sizeof( mbedtls_mpi ) ) ) == NULL )
         return( MBEDTLS_ERR_ECP_ALLOC_FAILED );
 
     mbedtls_mpi_init( &u ); mbedtls_mpi_init( &Zi ); mbedtls_mpi_init( &ZZi );
@@ -392,7 +378,7 @@ cleanup:
     mbedtls_mpi_free( &u ); mbedtls_mpi_free( &Zi ); mbedtls_mpi_free( &ZZi );
     for( i = 0; i < t_len; i++ )
         mbedtls_mpi_free( &c[i] );
-    mbedtls_free( c );
+    free( c );
 
     return( ret );
 }
@@ -901,7 +887,7 @@ static int ecp_mul_comb( mbedtls_ecp_group *grp, mbedtls_ecp_point *R,
 
     if( T == NULL )
     {
-        T = mbedtls_calloc( pre_len, sizeof( mbedtls_ecp_point ) );
+        T = calloc( pre_len, sizeof( mbedtls_ecp_point ) );
         if( T == NULL )
         {
             ret = MBEDTLS_ERR_ECP_ALLOC_FAILED;
@@ -944,7 +930,7 @@ cleanup:
     {
         for( i = 0; i < pre_len; i++ )
             mbedtls_ecp_point_free( &T[i] );
-        mbedtls_free( T );
+        free( T );
     }
 
     mbedtls_mpi_free( &M );
@@ -1239,7 +1225,7 @@ int mbedtls_ecp_self_test( int verbose )
     mbedtls_ecp_group_load( &grp);
 
     if( verbose != 0 )
-        mbedtls_printf( "  ECP test #1 (constant op_count, base point G): " );
+        printf( "  ECP test #1 (constant op_count, base point G): " );
 
     /* Do a dummy multiplication first to trigger precomputation */
     MBEDTLS_MPI_CHK( mbedtls_mpi_lset( &m, 2 ) );
@@ -1268,7 +1254,7 @@ int mbedtls_ecp_self_test( int verbose )
             mul_count != mul_c_prev )
         {
             if( verbose != 0 )
-                mbedtls_printf( "failed (%u)\n", (unsigned int) i );
+                printf( "failed (%u)\n", (unsigned int) i );
 
             ret = 1;
             goto cleanup;
@@ -1276,10 +1262,10 @@ int mbedtls_ecp_self_test( int verbose )
     }
 
     if( verbose != 0 )
-        mbedtls_printf( "passed\n" );
+        printf( "passed\n" );
 
     if( verbose != 0 )
-        mbedtls_printf( "  ECP test #2 (constant op_count, other point): " );
+        printf( "  ECP test #2 (constant op_count, other point): " );
     /* We computed P = 2G last time, use it */
 
     add_count = 0;
@@ -1305,7 +1291,7 @@ int mbedtls_ecp_self_test( int verbose )
             mul_count != mul_c_prev )
         {
             if( verbose != 0 )
-                mbedtls_printf( "failed (%u)\n", (unsigned int) i );
+                printf( "failed (%u)\n", (unsigned int) i );
 
             ret = 1;
             goto cleanup;
@@ -1313,12 +1299,12 @@ int mbedtls_ecp_self_test( int verbose )
     }
 
     if( verbose != 0 )
-        mbedtls_printf( "passed\n" );
+        printf( "passed\n" );
 
 cleanup:
 
     if( ret < 0 && verbose != 0 )
-        mbedtls_printf( "Unexpected error, return code = %08X\n", ret );
+        printf( "Unexpected error, return code = %08X\n", ret );
 
     mbedtls_ecp_group_free( &grp );
     mbedtls_ecp_point_free( &R );
@@ -1326,7 +1312,7 @@ cleanup:
     mbedtls_mpi_free( &m );
 
     if( verbose != 0 )
-        mbedtls_printf( "\n" );
+        printf( "\n" );
 
     return( ret );
 }
