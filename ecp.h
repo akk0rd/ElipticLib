@@ -16,13 +16,6 @@
 extern "C" {
 #endif
 
-typedef struct
-{
-    uint16_t tls_id;                /*!< TLS NamedCurve identifier  */
-    uint16_t bit_size;              /*!< Curve size in bits         */
-    const char *name;               /*!< Human-friendly name        */
-} mbedtls_ecp_curve_info;
-
 /**
  * \brief           ECP point structure (jacobian coordinates)
  *
@@ -149,32 +142,6 @@ mbedtls_ecp_group;
  * Some other constants from RFC 4492
  */
 #define MBEDTLS_ECP_TLS_NAMED_CURVE    3   /**< ECCurveType's named_curve */
-
-/**
- * \brief           Get the list of supported curves in order of preferrence
- *                  (full information)
- *
- * \return          A statically allocated array, the last entry is 0.
- */
-const mbedtls_ecp_curve_info *mbedtls_ecp_curve_list( void );
-
-/**
- * \brief           Get curve information from a TLS NamedCurve value
- *
- * \param tls_id    A MBEDTLS_ECP_DP_XXX value
- *
- * \return          The associated curve information or NULL
- */
-const mbedtls_ecp_curve_info *mbedtls_ecp_curve_info_from_tls_id( uint16_t tls_id );
-
-/**
- * \brief           Get curve information from a human-readable name
- *
- * \param name      The name
- *
- * \return          The associated curve information or NULL
- */
-const mbedtls_ecp_curve_info *mbedtls_ecp_curve_info_from_name( const char *name );
 
 /**
  * \brief           Initialize a point (as zero)

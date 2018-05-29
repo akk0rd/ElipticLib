@@ -1,45 +1,3 @@
-/*
- *  Elliptic curves over GF(p): generic functions
- *
- *  Copyright (C) 2006-2015, ARM Limited, All Rights Reserved
- *  SPDX-License-Identifier: Apache-2.0
- *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may
- *  not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- *  This file is part of mbed TLS (https://tls.mbed.org)
- */
-
-/*
- * References:
- *
- * SEC1 http://www.secg.org/index.php?action=secg,docs_secg
- * GECC = Guide to Elliptic Curve Cryptography - Hankerson, Menezes, Vanstone
- * FIPS 186-3 http://csrc.nist.gov/publications/fips/fips186-3/fips_186-3.pdf
- * RFC 4492 for the related TLS structures and constants
- *
- * [Curve25519] http://cr.yp.to/ecdh/curve25519-20060209.pdf
- *
- * [2] CORON, Jean-S'ebastien. Resistance against differential power analysis
- *     for elliptic curve cryptosystems. In : Cryptographic Hardware and
- *     Embedded Systems. Springer Berlin Heidelberg, 1999. p. 292-302.
- *     <http://link.springer.com/chapter/10.1007/3-540-48059-5_25>
- *
- * [3] HEDABOU, Mustapha, PINEL, Pierre, et B'EN'ETEAU, Lucien. A comb method to
- *     render ECC resistant against Side Channel Attacks. IACR Cryptology
- *     ePrint Archive, 2004, vol. 2004, p. 342.
- *     <http://eprint.iacr.org/2004/342.pdf>
- */
-
 #include "ecp.h"
 
 #include <string.h>
@@ -54,11 +12,6 @@
 #define mbedtls_free       free
 #endif
 
-#if ( defined(__ARMCC_VERSION) || defined(_MSC_VER) ) && \
-    !defined(inline) && !defined(__cplusplus)
-#define inline __inline
-#endif
-
 /* Implementation that should never be optimized out by the compiler */
 static void mbedtls_zeroize( void *v, size_t n ) {
     volatile unsigned char *p = v; while( n-- ) *p++ = 0;
@@ -69,23 +22,6 @@ static void mbedtls_zeroize( void *v, size_t n ) {
  */
 static unsigned long add_count, dbl_count, mul_count;
 
-#if defined(MBEDTLS_ECP_DP_SECP192R1_ENABLED) ||   \
-    defined(MBEDTLS_ECP_DP_SECP224R1_ENABLED) ||   \
-    defined(MBEDTLS_ECP_DP_SECP256R1_ENABLED) ||   \
-    defined(MBEDTLS_ECP_DP_SECP384R1_ENABLED) ||   \
-    defined(MBEDTLS_ECP_DP_SECP521R1_ENABLED) ||   \
-    defined(MBEDTLS_ECP_DP_BP256R1_ENABLED)   ||   \
-    defined(MBEDTLS_ECP_DP_BP384R1_ENABLED)   ||   \
-    defined(MBEDTLS_ECP_DP_BP512R1_ENABLED)   ||   \
-    defined(MBEDTLS_ECP_DP_SECP192K1_ENABLED) ||   \
-    defined(MBEDTLS_ECP_DP_SECP224K1_ENABLED) ||   \
-    defined(MBEDTLS_ECP_DP_SECP256K1_ENABLED)
-#define ECP_SHORTWEIERSTRASS
-#endif
-
-#if defined(MBEDTLS_ECP_DP_CURVE25519_ENABLED)
-#define ECP_MONTGOMERY
-#endif
 
 /*
  * Curve types: internal for now, might be exposed later
