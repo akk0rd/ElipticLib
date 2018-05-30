@@ -19,7 +19,7 @@
 
 #define BYTES_TO_T_UINT_2( a, b )                   \
     BYTES_TO_T_UINT_8( a, b, 0, 0, 0, 0, 0, 0 )
-
+/*
 static const mbedtls_mpi_uint secp192r1_p[] = {
     BYTES_TO_T_UINT_8( 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF ),
     BYTES_TO_T_UINT_8( 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF ),
@@ -45,7 +45,34 @@ static const mbedtls_mpi_uint secp192r1_n[] = {
     BYTES_TO_T_UINT_8( 0x36, 0xF8, 0xDE, 0x99, 0xFF, 0xFF, 0xFF, 0xFF ),
     BYTES_TO_T_UINT_8( 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF ),
 };
+*/
 
+static const mbedtls_mpi_uint secp192k1_p[] = {
+    BYTES_TO_T_UINT_8( 0x37, 0xEE, 0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFF ),
+    BYTES_TO_T_UINT_8( 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF ),
+    BYTES_TO_T_UINT_8( 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF ),
+};
+static const mbedtls_mpi_uint secp192k1_a[] = {
+    BYTES_TO_T_UINT_2( 0x00, 0x00 ),
+};
+static const mbedtls_mpi_uint secp192k1_b[] = {
+    BYTES_TO_T_UINT_2( 0x03, 0x00 ),
+};
+static const mbedtls_mpi_uint secp192k1_gx[] = {
+    BYTES_TO_T_UINT_8( 0x7D, 0x6C, 0xE0, 0xEA, 0xB1, 0xD1, 0xA5, 0x1D ),
+    BYTES_TO_T_UINT_8( 0x34, 0xF4, 0xB7, 0x80, 0x02, 0x7D, 0xB0, 0x26 ),
+    BYTES_TO_T_UINT_8( 0xAE, 0xE9, 0x57, 0xC0, 0x0E, 0xF1, 0x4F, 0xDB ),
+};
+static const mbedtls_mpi_uint secp192k1_gy[] = {
+    BYTES_TO_T_UINT_8( 0x9D, 0x2F, 0x5E, 0xD9, 0x88, 0xAA, 0x82, 0x40 ),
+    BYTES_TO_T_UINT_8( 0x34, 0x86, 0xBE, 0x15, 0xD0, 0x63, 0x41, 0x84 ),
+    BYTES_TO_T_UINT_8( 0xA7, 0x28, 0x56, 0x9C, 0x6D, 0x2F, 0x2F, 0x9B ),
+};
+static const mbedtls_mpi_uint secp192k1_n[] = {
+    BYTES_TO_T_UINT_8( 0x8D, 0xFD, 0xDE, 0x74, 0x6A, 0x46, 0x69, 0x0F ),
+    BYTES_TO_T_UINT_8( 0x17, 0xFC, 0xF2, 0x26, 0xFE, 0xFF, 0xFF, 0xFF ),
+    BYTES_TO_T_UINT_8( 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF ),
+};
 /*
  * Create an MPI from embedded constants
  * (assumes len is an exact multiple of sizeof mbedtls_mpi_uint)
@@ -119,16 +146,16 @@ int mest( int verbose )
     mbedtls_mpi_init( &m );
 
     ecp_group_load(&grp,
-                secp192r1_p, sizeof(secp192r1_p),
-                NULL, 0,
-                secp192r1_b, sizeof(secp192r1_b),
-                secp192r1_gx, sizeof(secp192r1_gx),
-                secp192r1_gy, sizeof(secp192r1_gy),
-                secp192r1_n, sizeof(secp192r1_n)
+                secp192k1_p,  sizeof(secp192k1_p) ,
+                secp192k1_a,  sizeof(secp192k1_a) ,
+                secp192k1_b,  sizeof(secp192k1_b) ,
+                secp192k1_gx, sizeof(secp192k1_gx),
+                secp192k1_gy, sizeof(secp192k1_gy),
+                secp192k1_n,  sizeof(secp192k1_n) 
                  );
 
     mbedtls_mpi_lset( &m, 2 );
-    mbedtls_ecp_mul( &grp, &P, &m, &grp.G, NULL, NULL );
+    mbedtls_ecp_mul( &grp, &P, &m, &grp.G );
 
     mbedtls_mpi_write_file(NULL, &P.X, 16, NULL );
     mbedtls_mpi_write_file(NULL, &P.Y, 16, NULL );
